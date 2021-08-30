@@ -1,18 +1,14 @@
 import torch
 import pandas as pd
-import numpy as np
 
 from torch.utils.data import DataLoader
-from torchensemble.bagging import BaggingClassifier
-from torchensemble.utils import io
 
 from itertools import product
 import os
 
 from data_set import MaskDataset
-from utils import transformation
 from model import PretrainedModel
-from predict import Predictore
+from predict import Predictor
 from utils import Label
 from utils import get_time
 import config
@@ -35,7 +31,7 @@ def main():
         )
 
         test_dataloader = DataLoader(
-            dataset=test_dataset, batch_size=config.BATCH_SIZE, num_workers=4,
+            dataset=test_dataset, batch_size=config.BATCH_SIZE, num_workers=2,
         )
 
         device = torch.device("cuda:0")

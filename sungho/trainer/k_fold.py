@@ -30,14 +30,14 @@ class KFoldTrainer:
         train_dataloader = DataLoader(
             dataset=train_dataset,
             batch_size=self.config['batch_size'],
-            num_workers=4,
+            num_workers=2,
             shuffle=True,
             collate_fn=collator,
         )
         test_dataloader = DataLoader(
             dataset=test_dataset,
             batch_size=self.config['batch_size'],
-            num_workers=4,
+            num_workers=2,
         )
 
         self.trainer.train(train_dataloader, test_dataloader)

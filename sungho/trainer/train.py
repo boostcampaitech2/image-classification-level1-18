@@ -8,16 +8,15 @@ from ray import tune
 from .early_stopping import EarlyStopping
 from loss_set import get_loss, CutMixCriterion
 
-
 class BaseTrainer:
     def __init__(self, model_config):
         self.config = model_config
         self.model = self.config['model']
         self.device = self.config['device']
         self.optimizer = self.config['optimizer']
-        self.criterion = self.config['criterion']
+        # self.criterion = self.config['criterion']
         self.scheduler = self.config['scheduler']
-
+        self.criterion = get_loss(config.loss, cutmix=config.cutmix, class_num=self.config['class_num'])
         self.wandb_tag = [self.config['feature'], self.config['model_name']]
         if self.config['cut_mix'] and self.config['cut_mix_vertical']:
             self.wandb_tag.append('CutMix-Vertical')
@@ -30,7 +29,7 @@ class BaseTrainer:
     def train(self, train_dataloader, val_dataloader):
         self._forward(train_dataloader, val_dataloader)
 
-    def _forward(self, train_dataloader, val_dataloader, patience=5):
+    def _forward(self, train_dataloader, val_dataloader, patience=6):
         run = wandb.init(
             project="aistage-mask", entity="naem1023",
             tags=self.wandb_tag
@@ -40,6 +39,8 @@ class BaseTrainer:
         wandb.config.epoch = config.NUM_EPOCH
         wandb.config.k_fold = config.k_split
         wandb.watch(self.model)
+
+        scaler = torch.cuda.amp.GradScaler()
 
         early_stopping = EarlyStopping(
             patience=patience, verbose=True, path=self.config['model_dir'], feature=self.config['feature'],
@@ -75,23 +76,28 @@ class BaseTrainer:
                         targets = targets.to(self.device)
                         target_list += targets.tolist()
 
-                    self.optimizer.zero_grad()
+                    with torch.cuda.amp.autocast():
+                        logits = self.model(images)
 
-                    logits = self.model(images)
+                        if self.config['loss'] == 'LabelSmoothing':
+                            preds = logits
+                        elif self.config['model_name'] in ["volo", "CaiT"]:
+                            preds = torch.argmax(logits, dim=1)
+                        else:
+                            # _, preds = torch.max(logits, 1)
+                            preds = torch.nn.functional.softmax(logits, dim=-1)
+                            # finally get the index of the prediction with highest score
+                            # topk_scores, preds = torch.topk(scores, k=1, dim=-1)
 
-                    if self.config['model_name'] in ['ViT', "BiT", "deit","efficientnet-b4","efficientnet-b7","resnet18","mobilenetv2",'test']:
-                        preds = torch.nn.functional.softmax(logits, dim=-1)
-                        # finally get the index of the prediction with highest score
-                        # topk_scores, preds = torch.topk(scores, k=1, dim=-1)
-                    elif self.config['model_name'] in ["volo", "CaiT"]:
-                        preds = torch.argmax(logits, dim=1)
-                    else:
-                        _, preds = torch.max(logits, 1)
+                        loss = self.criterion(preds, targets)
+                    # loss.backward()
 
-                    loss = self.criterion(preds, targets)
-                    loss.backward()
-                    self.optimizer.step()
+                    # self.optimizer.step()
                     self.scheduler.step()
+                    scaler.scale(loss).backward(retain_graph=True)
+                    scaler.step(self.optimizer)
+                    scaler.update()
+                    self.optimizer.zero_grad()
 
                     running_loss += loss.item()
 
@@ -140,14 +146,15 @@ class BaseTrainer:
 
                         logits = self.model(images)
 
-                        if self.config['model_name'] in ['ViT', "BiT", "deit", "efficientnet-b4", "efficientnet-b7", "resnet18","mobilenetv2"]:
-                            preds = torch.nn.functional.softmax(logits, dim=-1)
+                        # if self.config['model_name'] in ['ViT', "BiT", "deit", "efficientnet-b4", "efficientnet-b7", "resnet18","mobilenetv2"]:
+
                             # finally get the index of the prediction with highest score
                             # topk_scores, preds = torch.topk(scores, k=1, dim=-1)
-                        elif self.config['model_name'] in ["volo", "CaiT"]:
+                        if self.config['model_name'] in ["volo", "CaiT"]:
                             preds = torch.argmax(logits, dim=1)
                         else:
-                            _, preds = torch.max(logits, 1)
+                            # _, preds = torch.max(logits, 1)
+                            preds = torch.nn.functional.softmax(logits, dim=-1)
 
                         if self.config['cut_mix']:
                             val_loss = self.val_criterion(preds, targets)

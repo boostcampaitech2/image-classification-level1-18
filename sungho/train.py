@@ -24,11 +24,6 @@ import torch.backends.cudnn as cudnn
 
 os.environ['WANDB_API_KEY'] = config.wandb_api_key
 
-ray_config = {
-    "batch_size": tune.choice([2, 4, 8, 16]),
-    "loss": tune.choice(config.loss),
-}
-
 def seed_everything(seed=42):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
@@ -51,10 +46,15 @@ def train_worker(train_df, test_df):
 
 
 def main():
+    seed_everything()
     train_df = pd.read_csv(config.with_system_path_csv)
     test_df = pd.read_csv(config.test_csv)
 
     if config.ray_tune:
+        ray_config = {
+            "batch_size": tune.choice([2, 4, 8, 16]),
+            "loss": tune.choice(config.loss),
+        }
         # set scheduler
         scheduler = ASHAScheduler(
             metric="f1_score",  # statics for selecting model

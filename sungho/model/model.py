@@ -9,14 +9,12 @@ import torch.nn.functional as F
 from efficientnet_pytorch import EfficientNet
 # from transformers import BeitFeatureExtractor, BeitForImageClassification
 
-from vit_pytorch import ViT
-from vit_pytorch.deepvit import DeepViT
 from vit_pytorch.cait import CaiT
 import timm
 from model import volo
 from tlt.utils import load_pretrained_weights
 import config
-
+# from nfnets import pretrained_nfnet
 
 class BaseModel(nn.Module):
     def __init__(self, num_classes):
@@ -81,6 +79,10 @@ class PretrainedModel:
             )
             self.init_weight(self.model.classifier)
 
+        elif name == "efficientnet-b2":
+            self.model = EfficientNet.from_pretrained(
+                "efficientnet-b2", num_classes=class_num
+            )
         elif name == "efficientnet-b4":
             self.model = EfficientNet.from_pretrained(
                 "efficientnet-b4", num_classes=class_num
@@ -133,7 +135,8 @@ class PretrainedModel:
                 emb_dropout=0.1,
                 layer_dropout=0.05,  # randomly dropout 5% of the layers
             )
-
+        # elif name == 'NFNet-F1':
+            # model_F1 = pretrained_nfnet('pretrained/F1_haiku.npz')
         if load_model:
             self.model.load_state_dict(torch.load(config.pretrained_path))
             print('load custom pretrained model!!', config.pretrained_path)

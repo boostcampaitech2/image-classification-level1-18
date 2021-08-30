@@ -6,7 +6,7 @@ import wandb
 
 class EarlyStopping:
     """주어진 patience 이후로 지표가 개선되지 않으면 학습을 조기 중지"""
-    def __init__(self, patience=7, verbose=False, delta=0.0, path='.' + os.sep, check='max', feature=None, model_name=''):
+    def __init__(self, patience=7, verbose=False, delta=0.0005, path='.' + os.sep, check='max', feature=None, model_name=''):
         """
         Args:
             patience (int): 지표가 개선된 후 기다리는 기간

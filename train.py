@@ -18,6 +18,8 @@ from torch.utils.tensorboard import SummaryWriter
 from dataset import MaskBaseDataset
 from loss import create_criterion
 
+import sungho.train
+
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -269,4 +271,6 @@ if __name__ == '__main__':
     data_dir = args.data_dir
     model_dir = args.model_dir
 
-    train(data_dir, model_dir, args)
+    # train(data_dir, model_dir, args)
+
+    sungho.train.main()

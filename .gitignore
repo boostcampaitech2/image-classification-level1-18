@@ -140,3 +140,17 @@ cython_debug/
 .idea/
 
 **/__pycache__/
+
+*.xml
+wandb/
+*.old
+*.pt
+*.csv
+*.txt
+*.yml
+*.pth
+*.out
+config.py
+2_EDA.ipynb
+data/
+*.pyc
