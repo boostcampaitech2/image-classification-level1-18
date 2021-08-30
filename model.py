@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from efficientnet_pytorch import EfficientNet
 
 
 class BaseModel(nn.Module):
@@ -32,6 +33,21 @@ class BaseModel(nn.Module):
         x = self.avgpool(x)
         x = x.view(-1, 128)
         return self.fc(x)
+
+class Efficient_b4(nn.Module):
+    def __init__(self, num_classes):
+        super().__init__()
+        self.net = EfficientNet.from_pretrained('efficientnet-b4')
+        for param in self.net.parameters():
+            param.requires_grad = False
+
+        self.net._fc = torch.nn.Linear(
+            in_features=1792, 
+            out_features=18, 
+            bias=True)
+
+    def forward(self, x):
+        return self.net(x)
 
 
 # Custom Model Template
