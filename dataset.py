@@ -4,6 +4,8 @@ from collections import defaultdict
 from enum import Enum
 from typing import Tuple, List
 
+import albumentations as A
+
 import numpy as np
 import torch
 from PIL import Image
@@ -25,8 +27,13 @@ class BaseAugmentation:
     def __init__(self, resize, mean, std, **args):
         self.transform = transforms.Compose([
             Resize(resize, Image.BILINEAR),
+            # CenterCrop((320, 256)),
+            ColorJitter(0.1, 0.1, 0.1, 0.1),
+            RandomHorizontalFlip(p=0.5),  
+            # A.Cutout(max_h_size=int(128 * 0.4), max_w_size=int(96 * 0.4), num_holes=1, p=0.5),
             ToTensor(),
             Normalize(mean=mean, std=std),
+            # RandomApply(AddGaussianNoise(args.mean, args.std), p=0.5),
         ])
 
     def __call__(self, image):
@@ -53,12 +60,12 @@ class AddGaussianNoise(object):
 class CustomAugmentation:
     def __init__(self, resize, mean, std, **args):
         self.transform = transforms.Compose([
-            CenterCrop((320, 256)),
+            # CenterCrop((320, 256)),
             Resize(resize, Image.BILINEAR),
-            ColorJitter(0.1, 0.1, 0.1, 0.1),
+            # ColorJitter(0.1, 0.1, 0.1, 0.1),
             ToTensor(),
             Normalize(mean=mean, std=std),
-            AddGaussianNoise()
+            # AddGaussianNoise()
         ])
 
     def __call__(self, image):
@@ -98,9 +105,9 @@ class AgeLabels(int, Enum):
         except Exception:
             raise ValueError(f"Age value should be numeric, {value}")
 
-        if value < 30:
+        if value < 29:
             return cls.YOUNG
-        elif value < 60:
+        elif value < 58:
             return cls.MIDDLE
         else:
             return cls.OLD
