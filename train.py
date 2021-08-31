@@ -66,6 +66,24 @@ def grid_image(np_images, gts, preds, n=16, shuffle=False):
 
     return figure
 
+def rand_bbox(size, lam): # size : [Batch_size, Channel, Width, Height]
+    W = size[2] 
+    H = size[3] 
+    cut_rat = np.sqrt(1. - lam)  # 패치 크기 비율
+    cut_w = np.int(W * cut_rat)
+    cut_h = np.int(H * cut_rat)  
+
+   	# 패치의 중앙 좌표 값 cx, cy
+    cx = np.random.randint(W)
+    cy = np.random.randint(H)
+		
+    # 패치 모서리 좌표 값 
+    bbx1 = 0
+    bby1 = np.clip(cy - cut_h // 2, 0, H)
+    bbx2 = W
+    bby2 = np.clip(cy + cut_h // 2, 0, H)
+   
+    return bbx1, bby1, bbx2, bby2
 
 def increment_path(path, exist_ok=False):
     """ Automatically increment path, i.e. runs/exp --> runs/exp0, runs/exp1 etc.
@@ -163,6 +181,9 @@ def train(data_dir, model_dir, args):
         model.train()
         loss_value = 0
         matches = 0
+        epoch_f1 = 0
+        n_iter = 0
+
         for idx, train_batch in enumerate(train_loader):
             inputs, labels = train_batch
             inputs = inputs.to(device)
@@ -170,9 +191,22 @@ def train(data_dir, model_dir, args):
 
             optimizer.zero_grad()
 
-            outs = model(inputs)
-            preds = torch.argmax(outs, dim=-1)
-            loss = criterion(outs, labels)
+            if np.random.random()>0.5: # cutmix가 실행될 경우     
+                lam = np.random.beta(0.6, 0.4)
+                rand_index = torch.randperm(inputs.size()[0]).to(device)
+                target_a = labels
+                target_b = labels[rand_index]
+                bbx1, bby1, bbx2, bby2 = rand_bbox(inputs.size(), lam)
+                inputs[:,:, bbx1:bbx2, bby1:bby2] = inputs[rand_index, :, bbx1:bbx2, bby1:bby2]
+                lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (inputs.size()[-1] * inputs.size()[-2]))
+                outputs = model(inputs)
+                loss = criterion(outputs, target_a) * lam + criterion(outputs, target_b) * (1. - lam) # 패치 이미지와 원본 이미지의 비율에 맞게 loss를 계산을 해주는 부분
+
+            else: # cutmix가 실행되지 않았을 경우
+                outputs= model(inputs) 
+                loss= criterion(outputs, labels)
+
+            _, preds= torch.max(outputs, 1) 
 
             loss.backward()
             optimizer.step()
@@ -264,6 +298,10 @@ if __name__ == '__main__':
     parser.add_argument('--lr_decay_step', type=int, default=20, help='learning rate scheduler deacy step (default: 20)')
     parser.add_argument('--log_interval', type=int, default=20, help='how many batches to wait before logging training status')
     parser.add_argument('--name', default='exp', help='model save at {SM_MODEL_DIR}/{name}')
+
+    # CutMix
+    parser.add_argument('--cutmix', default=True, help='start Cutmix (default: True)')
+    
 
     # Container environment
     parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/input/data/train/images'))
