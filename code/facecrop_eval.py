@@ -1,0 +1,58 @@
+import torch
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from facenet_pytorch import MTCNN
+import os, cv2
+
+
+mtcnn = MTCNN(keep_all=True, device='cuda:0')
+new_img_dir = '/opt/ml/input/data/eval/new_imgs'
+img_path = '/opt/ml/input/data/eval/images'
+
+cnt = 0
+if not os.path.exists(new_img_dir):
+    os.makedirs(new_img_dir)
+
+for paths in os.listdir(img_path):
+    if paths[0] == '.': continue
+    
+    #print(paths)
+    img_dir = os.path.join(img_path, paths)
+    img = cv2.imread(img_dir)
+    
+    img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+        
+        #mtcnn 적용
+    boxes,probs = mtcnn.detect(img)
+        
+        # boxes 확인
+    if len(probs) > 1: 
+        print(boxes)
+    if not isinstance(boxes, np.ndarray):
+        print('Nope!')
+        # 직접 crop
+        img=img[100:400, 50:350, :]
+        
+        # boexes size 확인
+    else:
+        xmin = int(boxes[0, 0])-30
+        ymin = int(boxes[0, 1])-30
+        xmax = int(boxes[0, 2])+30
+        ymax = int(boxes[0, 3])+30
+            
+        if xmin < 0: xmin = 0
+        if ymin < 0: ymin = 0
+        if xmax > 384: xmax = 384
+        if ymax > 512: ymax = 512
+            
+        img = img[ymin:ymax, xmin:xmax, :]
+            
+    tmp = os.path.join(new_img_dir, paths)
+    cnt += 1
+    
+    img = cv2.resize(img,(224, 244))
+    
+    plt.imsave(tmp, img)
+        
+print(cnt)

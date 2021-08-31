@@ -13,8 +13,9 @@ import get_transforms
 
 
 DATA_DIR = "/opt/ml/input/data/train"
-IMAGE_PATH = '/opt/ml/input/data/train/images'
-LABELED_DATA_PATH = '/opt/ml/code/labeled_train_data.csv'
+IMAGE_PATH = '/opt/ml/input/data/train/new_imgs'
+#IMAGE_PATH = '/opt/ml/input/data/train/images'
+LABELED_DATA_PATH = '/opt/ml/code/image-classification-level1-18/code/labeled_train_data.csv'
 mean = (0.560,0.524,0.501)
 std = (0.233,0.243,0.246)
 

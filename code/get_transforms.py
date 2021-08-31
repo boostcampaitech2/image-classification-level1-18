@@ -2,7 +2,7 @@ from albumentations import *
 from albumentations.pytorch import ToTensorV2
 
 
-def start(need=('train', 'val'), img_size=(512, 384), mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246)):
+def start(need=('train', 'val'), img_size=(224, 244), mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246)):
     """
     train 혹은 validation의 augmentation 함수를 정의합니다. train은 데이터에 많은 변형을 주어야하지만, validation에는 최소한의 전처리만 주어져야합니다.
     
