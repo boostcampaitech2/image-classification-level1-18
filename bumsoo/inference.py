@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 
 from dataset import TestDataset, MaskBaseDataset
 
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 def load_model(saved_model, num_classes, device):
     model_cls = getattr(import_module("model"), args.model)

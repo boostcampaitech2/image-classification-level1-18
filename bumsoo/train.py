@@ -150,7 +150,7 @@ def train(data_dir, model_dir, args):
         lr=args.lr,
         weight_decay=5e-4
     )
-    scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=1, eta_min=0.00001)
+    scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=30, T_mult=1, eta_min=0.00001)
 
     # -- logging
     logger = SummaryWriter(log_dir=save_dir)
@@ -276,7 +276,7 @@ def train(data_dir, model_dir, args):
                 print('early_stopped')
                 break
 
-        wandb.log({'train_acc': train_acc, 'train_loss': train_loss, 'val_acc': val_acc, 'val_loss': val_loss})
+        wandb.log({'train_acc': train_acc, 'train_loss': train_loss, 'val_acc': val_acc, 'val_loss': val_loss, 'F1_score': epoch_f1})
         msg = "Epoch: " + str(epoch) + "\nTrain Loss: " + str(train_loss) + "\nTrain Acc:  " + str(train_acc) + "\nVal Loss:    " + str(val_loss) + "\nVal Acc:      " + str(val_acc) + "\nF1 score:    " + str(epoch_f1)
         useful_func.send_msg(msg)
 
