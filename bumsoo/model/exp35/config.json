@@ -1,0 +1,25 @@
+{
+    "seed": 42,
+    "epochs": 30,
+    "dataset": "MaskBaseDataset",
+    "augmentation": "AlbumAugmentation",
+    "resize": [
+        350,
+        300
+    ],
+    "batch_size": 32,
+    "valid_batch_size": 100,
+    "model": "MyModel",
+    "optimizer": "Adam",
+    "lr": 0.001,
+    "val_ratio": 0.1,
+    "criterion": "focal",
+    "lr_decay_step": 20,
+    "log_interval": 20,
+    "name": "exp",
+    "cutmix": true,
+    "cutmix_beta": 1.0,
+    "early_stop": 7,
+    "data_dir": "/opt/ml/input/data/train/images",
+    "model_dir": "./model"
+}

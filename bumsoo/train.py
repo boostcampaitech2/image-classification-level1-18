@@ -19,6 +19,10 @@ from dataset import MaskBaseDataset
 from loss import create_criterion
 
 import wandb
+from custom_lib import useful_func, focal_loss, cut_mix
+from sklearn.metrics import f1_score
+# from sklearn.model_section import train_set_split
+
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -108,6 +112,7 @@ def train(data_dir, model_dir, args):
         std=dataset.std,
     )
     dataset.set_transform(transform)
+    is_cutmix = args.cutmix
 
     # -- data_loader
     train_set, val_set = dataset.split_dataset()
@@ -127,7 +132,7 @@ def train(data_dir, model_dir, args):
         num_workers=multiprocessing.cpu_count()//2,
         shuffle=False,
         pin_memory=use_cuda,
-        drop_last=True,
+        drop_last=False,
     )
 
     # -- model
@@ -152,10 +157,12 @@ def train(data_dir, model_dir, args):
     with open(os.path.join(save_dir, 'config.json'), 'w', encoding='utf-8') as f:
         json.dump(vars(args), f, ensure_ascii=False, indent=4)
 
-    config={"epochs": args.epochs, "batch_size": args.batch_size, "learning_rate" : args.lr}
-    wandb.init(project="p_stage_img_cl", config=config)
+    # -- wandb
+    config={"epochs": args.epochs, "batch_size": args.batch_size, "learning_rate" : args.lr, "exp": save_dir}
+    wandb_tag = [args.criterion, args.model, args.optimizer]
+    wandb.init(project="p_stage_img_cl", config=config, tags=wandb_tag)
     
-
+    best_f1 = 0
     best_val_acc = 0
     best_val_loss = np.inf
     for epoch in range(args.epochs):
@@ -163,6 +170,9 @@ def train(data_dir, model_dir, args):
         model.train()
         loss_value = 0
         matches = 0
+        epoch_f1 = 0
+        n_iter = 0
+
         for idx, train_batch in enumerate(train_loader):
             inputs, labels = train_batch
             inputs = inputs.to(device)
@@ -170,13 +180,24 @@ def train(data_dir, model_dir, args):
 
             optimizer.zero_grad()
 
-            outs = model(inputs)
+            if is_cutmix:
+                lam = np.random.beta(args.cutmix_beta, args.cutmix_beta)
+                rand_index = torch.randperm(inputs.size()[0]).to(device)
+                target_a = labels # 원본 이미지 label
+                target_b = labels[rand_index] # 패치 이미지 label       
+                bbx1, bby1, bbx2, bby2 = cut_mix.rand_bbox(inputs.size(), lam)
+                inputs[:, :, bbx1:bbx2, bby1:bby2] = inputs[rand_index, :, bbx1:bbx2, bby1:bby2]
+                lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (inputs.size()[-1] * inputs.size()[-2]))
+                outs = model(inputs)
+                loss = criterion(outs, target_a) * lam + criterion(outs, target_b) * (1. - lam) # 패치 이미지와 원본 이미지의 비율에 맞게 loss를 계산을 해주는 부분
+            else:
+                outs = model(inputs)
+                loss = criterion(outs, labels)
+
             preds = torch.argmax(outs, dim=-1)
-            loss = criterion(outs, labels)
 
             loss.backward()
             optimizer.step()
-            scheduler.step()
 
             loss_value += loss.item()
             matches += (preds == labels).sum().item()
@@ -215,6 +236,8 @@ def train(data_dir, model_dir, args):
                 acc_item = (labels == preds).sum().item()
                 val_loss_items.append(loss_item)
                 val_acc_items.append(acc_item)
+                epoch_f1 += f1_score(labels.cpu().numpy(), preds.cpu().numpy(), average='macro')
+                n_iter += 1
 
                 if figure is None:
                     inputs_np = torch.clone(inputs).detach().cpu().permute(0, 2, 3, 1).numpy()
@@ -226,12 +249,21 @@ def train(data_dir, model_dir, args):
             val_loss = np.sum(val_loss_items) / len(val_loader)
             val_acc = np.sum(val_acc_items) / len(val_set)
             best_val_loss = min(best_val_loss, val_loss)
+            epoch_f1 = epoch_f1/n_iter
             if val_acc > best_val_acc:
-                print(f"New best model for val accuracy : {val_acc:4.2%}! saving the best model..")
-                torch.save(model.module.state_dict(), f"{save_dir}/best.pth")
+                # print(f"New best model for val accuracy : {val_acc:4.2%}! saving the best model..")
+                # torch.save(model.module.state_dict(), f"{save_dir}/best.pth")
                 best_val_acc = val_acc
+            if epoch_f1 > best_f1:
+                print(f"New best model for F1 score : {epoch_f1:4.2%}! saving the best model..")
+                torch.save(model.module.state_dict(), f"{save_dir}/best.pth")
+                best_f1 = epoch_f1
+                early_stop_point = 0
+            else:
+                early_stop_point += 1
             torch.save(model.module.state_dict(), f"{save_dir}/last.pth")
             print(
+                f"[Val] f1-score: {epoch_f1:4.2%}, best f1-score: {best_f1:4.2%}\n"
                 f"[Val] acc : {val_acc:4.2%}, loss: {val_loss:4.2} || "
                 f"best acc : {best_val_acc:4.2%}, best loss: {best_val_loss:4.2}"
             )
@@ -240,7 +272,13 @@ def train(data_dir, model_dir, args):
             logger.add_figure("results", figure, epoch)
             print()
 
+            if early_stop_point == args.early_stop:
+                print('early_stopped')
+                break
+
         wandb.log({'train_acc': train_acc, 'train_loss': train_loss, 'val_acc': val_acc, 'val_loss': val_loss})
+        msg = "Epoch: " + str(epoch) + "\nTrain Loss: " + str(train_loss) + "\nTrain Acc:  " + str(train_acc) + "\nVal Loss:    " + str(val_loss) + "\nVal Acc:      " + str(val_acc) + "\nF1 score:    " + str(epoch_f1)
+        useful_func.send_msg(msg)
 
 
 if __name__ == '__main__':
@@ -255,10 +293,10 @@ if __name__ == '__main__':
 
     # Data and model checkpoints directories
     parser.add_argument('--seed', type=int, default=42, help='random seed (default: 42)')
-    parser.add_argument('--epochs', type=int, default=20, help='number of epochs to train (default: 3)')
+    parser.add_argument('--epochs', type=int, default=30, help='number of epochs to train (default: 3)')
     parser.add_argument('--dataset', type=str, default='MaskBaseDataset', help='dataset augmentation type (default: MaskBaseDataset)')
     parser.add_argument('--augmentation', type=str, default='AlbumAugmentation', help='data augmentation type (default: AlbumAugmentation)')
-    parser.add_argument("--resize", nargs="+", type=list, default=[512, 384], help='resize size for image when training')
+    parser.add_argument("--resize", nargs="+", type=list, default=[350, 300], help='resize size for image when training')
     parser.add_argument('--batch_size', type=int, default=32, help='input batch size for training (default: 64)')
     parser.add_argument('--valid_batch_size', type=int, default=100, help='input batch size for validing (default: 1000)')
     parser.add_argument('--model', type=str, default='MyModel', help='model type (default: MyModel)')
@@ -269,6 +307,9 @@ if __name__ == '__main__':
     parser.add_argument('--lr_decay_step', type=int, default=20, help='learning rate scheduler deacy step (default: 20)')
     parser.add_argument('--log_interval', type=int, default=20, help='how many batches to wait before logging training status')
     parser.add_argument('--name', default='exp', help='model save at {SM_MODEL_DIR}/{name}')
+    parser.add_argument('--cutmix', default=True, help='acitvate cutmix (default: True)')
+    parser.add_argument('--cutmix_beta', default=1.0, help='parameter for cutmix (default: 1.0)')
+    parser.add_argument('--early_stop', default=10)
 
     # Container environment
     parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/input/data/train/images'))

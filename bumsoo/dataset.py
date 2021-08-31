@@ -71,7 +71,8 @@ class CustomAugmentation:
 class AlbumAugmentation:
     def __init__(self, resize, mean, std, **args):
         self.transform = alb.Compose([
-            alb.Resize(resize[0], resize[1], p=1.0),
+            # alb.Resize(resize[0], resize[1], p=1.0),
+            alb.CenterCrop(resize[0], resize[1], p=1.0),
             alb.HorizontalFlip(p=0.5),
             alb.ShiftScaleRotate(p=0.5),
             alb.HueSaturationValue(hue_shift_limit=0.2, sat_shift_limit=0.2, val_shift_limit=0.2, p=0.5),
@@ -144,7 +145,7 @@ class MaskBaseDataset(Dataset):
     gender_labels = []
     age_labels = []
 
-    def __init__(self, data_dir, mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246), val_ratio=0.2):
+    def __init__(self, data_dir, mean=(0.560, 0.524, 0.501), std=(0.233, 0.242, 0.245), val_ratio=0.2):
         self.data_dir = data_dir
         self.mean = mean
         self.std = std
@@ -318,7 +319,8 @@ class TestDataset(Dataset):
     def __init__(self, img_paths, resize, mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246)):
         self.img_paths = img_paths
         self.transform = alb.Compose([
-            alb.Resize(resize[0], resize[1]),
+            # alb.Resize(resize[0], resize[1]),
+            alb.CenterCrop(resize[0], resize[1], p=1.0),
             alb.Normalize(mean=mean, std=std, max_pixel_value=255.0, p=1.0),
             alb.pytorch.ToTensorV2(p=1.0),
         ], p=1.0)
