@@ -10,9 +10,10 @@ import focalloss
 from pytorch_metric_learning import losses
 import random
 import wandb
+from loss_functions import AngularPenaltySMLoss
 
 import my_emodel
-
+#/opt/ml/input/data/train/new_imgs
 SAVE_PATHF='/opt/ml/model/emodelf_b4crop.pt'
 SAVE_PATHA='/opt/ml/model/emodela_b4crop.pt'
 
@@ -29,16 +30,17 @@ def set_seed(seed):
 def start(train_dataset, val_dataset):
     wandb.init(project='mask_classification', entity='jaehyung25')
     set_seed(42)
+    
     # Mnist Dataset을 DataLoader에 붙이기
     BATCH_SIZE = 32
-    
+
     train_dataloader = data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
     test_dataloader = data.DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
     ## 2. mnist train 데이터 셋을 resnet18 모델에 학습하기
 
     CLASS_NUM = 18
     my_mmodel = my_emodel.start(CLASS_NUM)
-    
+
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu") # 학습 때 GPU 사용여부 결정. Colab에서는 "런타임"->"런타임 유형 변경"에서 "GPU"를 선택할 수 있음
 
@@ -47,17 +49,23 @@ def start(train_dataset, val_dataset):
     my_mmodel.to(device) # Resnent 18 네트워크의 Tensor들을 GPU에 올릴지 Memory에 올릴지 결정함
 
     LEARNING_RATE = 0.0001 # 학습 때 사용하는 optimizer의 학습률 옵션 설정
-    NUM_EPOCH = 2 # 학습 때 mnist train 데이터 셋을 얼마나 많이 학습할지 결정하는 옵션
+    NUM_EPOCH = 5 # 학습 때 mnist train 데이터 셋을 얼마나 많이 학습할지 결정하는 옵션
 
     #loss_fn = torch.nn.CrossEntropyLoss() # 분류 학습 때 많이 사용되는 Cross entropy loss를 objective function으로 사용 - https://en.wikipedia.org/wiki/Cross_entropy
     #loss_fn = losses.ArcFaceLoss(512,18,loss_type='arcface')
-    loss_fn = focalloss.FocalLoss(gamma=2)
+    #loss_fn = focalloss.FocalLoss(gamma=2)
+    loss_fn = AngularPenaltySMLoss(512,CLASS_NUM,loss_type='arcface')
     optimizer = torch.optim.Adam(my_mmodel.parameters(), lr=LEARNING_RATE) # weight 업데이트를 위한 optimizer를 Adam으로 사용함
 
     dataloaders = {
         "train" : train_dataloader,
         "test" : test_dataloader
     }
+
+    ### 학습 코드 시작
+    best_test_accuracy = 0.
+    best_test_loss = 9999.
+    best_test_f1 = 0.
 
     ### 학습 코드 시작
     best_test_accuracy = 0.
@@ -71,9 +79,10 @@ def start(train_dataset, val_dataset):
         running_train_acc = 0.
         running_train_f1 = 0.
         n_train_iter = 0
+
         my_mmodel.train()
 
-        for ind, (images, labels) in enumerate(tqdm.tqdm(dataloaders['train'],leave=False)):
+        for ind, (images, labels) in enumerate(tqdm.tqdm(dataloaders["train"],leave=False)):
             # (참고.해보기) 현재 tqdm으로 출력되는 것이 단순히 진행 상황 뿐인데 현재 epoch, running_loss와 running_acc을 출력하려면 어떻게 할 수 있는지 tqdm 문서를 보고 해봅시다!
             # hint - with, pbar
             images = images.to(device)
@@ -147,3 +156,4 @@ def start(train_dataset, val_dataset):
             
     print("학습 종료!")
     print(f"최고 accuracy : {best_test_accuracy}, 최고 낮은 loss : {best_test_loss}, 최고 높은 f1 : {best_test_f1}")
+

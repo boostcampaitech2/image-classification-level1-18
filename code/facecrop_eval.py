@@ -53,6 +53,6 @@ for paths in os.listdir(img_path):
     
     img = cv2.resize(img,(224, 244))
     
-    plt.imsave(tmp, img)
+    cv2.imwrite(tmp, img)
         
 print(cnt)

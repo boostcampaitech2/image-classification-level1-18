@@ -1,0 +1,24 @@
+{
+    "os": "Linux-4.4.0-59-generic-x86_64-with-glibc2.10",
+    "python": "3.8.5",
+    "heartbeatAt": "2021-08-31T07:17:11.828068",
+    "startedAt": "2021-08-31T07:17:10.053355",
+    "docker": null,
+    "gpu": "Tesla V100-SXM2-32GB",
+    "gpu_count": 1,
+    "cpu_count": 8,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "main.py",
+    "codePath": "code/main.py",
+    "git": {
+        "remote": "https://github.com/boostcampaitech2/image-classification-level1-18.git",
+        "commit": "0a73ec45a486f5297b884ef4a9133d08a11fe94d"
+    },
+    "email": "godjaehyung@gmail.com",
+    "root": "/opt/ml/code/image-classification-level1-18",
+    "host": "2b7588df7a33",
+    "username": "root",
+    "executable": "/opt/conda/bin/python"
+}

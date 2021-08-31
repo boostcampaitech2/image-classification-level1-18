@@ -2,11 +2,13 @@ import make_image_name
 import make_label
 import make_new_train_data
 import dataset
+import torch
+import torch.utils.data as data
 import traine
 
 
 import numpy as np
-import torch
+
 
 
 IMAGE_PATH = '/opt/ml/input/data/train/new_imgs'
