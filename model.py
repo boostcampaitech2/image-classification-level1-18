@@ -36,7 +36,7 @@ class BaseModel(nn.Module):
 
 
 # Custom Model Template
-class efinetb4(nn.Module):
+class CustomModel(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
 
@@ -46,7 +46,7 @@ class efinetb4(nn.Module):
         3. 모델의 output_dimension 은 num_classes 로 설정해주세요.
         """
 
-        self.net = EfficientNet.from_pretrained('efficientnet-b4')
+        self.net = EfficientNet.from_pretrained('efficientnet-b2',num_classes=18)
 
 
     def forward(self, x):

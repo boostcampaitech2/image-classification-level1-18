@@ -27,8 +27,8 @@ class BaseAugmentation:
     def __init__(self, resize, mean, std, **args):
         self.transform = transforms.Compose([
             Resize(resize, Image.BILINEAR),
-            # CenterCrop((320, 256)),
-            ColorJitter(0.1, 0.1, 0.1, 0.1),
+            CenterCrop((320, 256)),
+            # ColorJitter(0.1, 0.1, 0.1, 0.1),
             RandomHorizontalFlip(p=0.5),  
             # A.Cutout(max_h_size=int(128 * 0.4), max_w_size=int(96 * 0.4), num_holes=1, p=0.5),
             ToTensor(),

@@ -16,6 +16,7 @@ import torch
 from torch.optim.lr_scheduler import StepLR,CosineAnnealingLR
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+import wandb
 
 from dataset import MaskBaseDataset
 from loss import create_criterion
@@ -134,7 +135,7 @@ def train(data_dir, model_dir, args):
     train_loader = DataLoader(
         train_set,
         batch_size=args.batch_size,
-        num_workers=multiprocessing.cpu_count()//2,
+        num_workers=4,
         shuffle=True,
         pin_memory=use_cuda,
         drop_last=True,
@@ -142,8 +143,8 @@ def train(data_dir, model_dir, args):
 
     val_loader = DataLoader(
         val_set,
-        batch_size=args.valid_batch_size,
-        num_workers=multiprocessing.cpu_count()//2,
+        batch_size=args.batch_size,
+        num_workers=4,
         shuffle=False,
         pin_memory=use_cuda,
         drop_last=True,
@@ -174,6 +175,12 @@ def train(data_dir, model_dir, args):
     with open(os.path.join(save_dir, 'config.json'), 'w', encoding='utf-8') as f:
         json.dump(vars(args), f, ensure_ascii=False, indent=4)
 
+
+    # wandb
+
+    wandb.init(project='mask_classification',entity='junhyuk93',config={"epochs" : args.epochs, "batch_size" : args.batch_size, "learning_rate" : args.lr, "name": save_dir})
+
+
     best_val_acc = 0
     best_val_loss = np.inf
     for epoch in range(args.epochs):
@@ -190,6 +197,8 @@ def train(data_dir, model_dir, args):
             labels = labels.to(device)
 
             optimizer.zero_grad()
+            
+            # Cutmix
 
             if np.random.random()>0.5: # cutmix가 실행될 경우     
                 lam = np.random.beta(0.6, 0.4)
@@ -273,6 +282,8 @@ def train(data_dir, model_dir, args):
             logger.add_figure("results", figure, epoch)
             print()
 
+        wandb.log({"train_acc" : train_acc, "train_loss" : train_loss, "val_acc" : val_acc, "val_loss" : val_loss})
+        
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
