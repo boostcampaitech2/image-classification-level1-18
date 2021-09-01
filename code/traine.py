@@ -14,8 +14,8 @@ import randbox
 
 import my_emodel
 #/opt/ml/input/data/train/new_imgs
-SAVE_PATHF='/opt/ml/model/emodelf_b4_final.pt'
-SAVE_PATHA='/opt/ml/model/emodela_b4_final.pt'
+SAVE_PATHF='/opt/ml/model/emodelf_b4_1249.pt'
+SAVE_PATHA='/opt/ml/model/emodela_b4_1249.pt'
 
 def set_seed(seed):
     random.seed(seed)
@@ -29,10 +29,12 @@ def set_seed(seed):
 
 def start(train_dataset, val_dataset):
     wandb.init(project='mask_classification', entity='jaehyung25')
-    set_seed(42)
+    set_seed(1249)
     
-    # Mnist Dataset을 DataLoader에 붙이기
+    # b4
     BATCH_SIZE = 32
+    #b7
+    #BATCH_SIZE = 16
 
     train_dataloader = data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
     test_dataloader = data.DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
@@ -49,7 +51,10 @@ def start(train_dataset, val_dataset):
     my_mmodel.to(device) # Resnent 18 네트워크의 Tensor들을 GPU에 올릴지 Memory에 올릴지 결정함
 
     LEARNING_RATE = 0.0001 # 학습 때 사용하는 optimizer의 학습률 옵션 설정
+    #b4
     NUM_EPOCH = 60 # 학습 때 mnist train 데이터 셋을 얼마나 많이 학습할지 결정하는 옵션
+    #b7
+    #NUM_EPOCH = 40
 
     #loss_fn = torch.nn.CrossEntropyLoss() # 분류 학습 때 많이 사용되는 Cross entropy loss를 objective function으로 사용 - https://en.wikipedia.org/wiki/Cross_entropy
     #loss_fn = losses.ArcFaceLoss(512,18,loss_type='arcface')
