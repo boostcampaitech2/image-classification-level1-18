@@ -2,8 +2,8 @@
 
 ## Getting Started    
 ### Dependencies
-- torch==1.6.0
-- torchvision==0.7.0                                                              
+- pytorch==1.9.0
+- pytorch-lightning==1.4.4
 
 ### Install Requirements
 - `pip install -r requirements.txt`
