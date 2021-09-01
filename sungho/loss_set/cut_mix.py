@@ -73,10 +73,14 @@ class CutMixCollator:
 
 
 class CutMixCriterion:
-    def __init__(self, reduction, class_num=None):
-        # self.criterion = nn.CrossEntropyLoss(reduction=reduction)
-        # self.criterion = FocalLoss()
-        self.criterion = LabelSmoothingLoss(classes=class_num)
+    def __init__(self, reduction, class_num=None, loss=None):
+        print(f'loss function of cutmix is {loss}!!')
+        if loss == 'crossentropy':
+            self.criterion = torch.nn.CrossEntropyLoss(reduction=reduction)
+        elif loss == 'focal':
+            self.criterion = FocalLoss()
+        elif loss == 'LabelSmoothing':
+            self.criterion = LabelSmoothingLoss(classes=class_num)
 
     def __call__(self, preds, targets):
         targets1, targets2, lam = targets

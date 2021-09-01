@@ -5,6 +5,7 @@ from PIL import Image
 import numpy as np
 import torch
 import cv2
+import os
 import albumentations as A
 import albumentations.pytorch
 
@@ -46,10 +47,14 @@ class MaskDataset(Dataset):
             label = target_path
 
         # img = np.array(Image.open(target_path).convert("RGB"))
+        if not os.path.isfile(target_path):
+            print(target_path)
+            exit()
         img = cv2.imread(target_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         if self.transforms:
             img = self.transforms(image=img)
             img = img["image"].type(torch.FloatTensor)
+            # img = img["image"]
         return img, label

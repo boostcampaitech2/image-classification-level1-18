@@ -16,7 +16,8 @@ class BaseTrainer:
         self.optimizer = self.config['optimizer']
         # self.criterion = self.config['criterion']
         self.scheduler = self.config['scheduler']
-        self.criterion = get_loss(config.loss, cutmix=config.cutmix, class_num=self.config['class_num'])
+        self.criterion = get_loss(self.config['loss'], cutmix=config.cutmix, class_num=self.config['class_num'])
+        self.fp16 = config.fp16
         self.wandb_tag = [self.config['feature'], self.config['model_name']]
         if self.config['cut_mix'] and self.config['cut_mix_vertical']:
             self.wandb_tag.append('CutMix-Vertical')
@@ -29,7 +30,7 @@ class BaseTrainer:
     def train(self, train_dataloader, val_dataloader):
         self._forward(train_dataloader, val_dataloader)
 
-    def _forward(self, train_dataloader, val_dataloader, patience=6):
+    def _forward(self, train_dataloader, val_dataloader, patience=7):
         run = wandb.init(
             project="aistage-mask", entity="naem1023",
             tags=self.wandb_tag
@@ -76,6 +77,7 @@ class BaseTrainer:
                         targets = targets.to(self.device)
                         target_list += targets.tolist()
 
+                    self.optimizer.zero_grad()
                     with torch.cuda.amp.autocast():
                         logits = self.model(images)
 
@@ -90,14 +92,15 @@ class BaseTrainer:
                             # topk_scores, preds = torch.topk(scores, k=1, dim=-1)
 
                         loss = self.criterion(preds, targets)
-                    # loss.backward()
 
-                    # self.optimizer.step()
-                    self.scheduler.step()
-                    scaler.scale(loss).backward(retain_graph=True)
+                    # scaler.scale(loss).backward(retain_graph=True)
+                    scaler.scale(loss).backward()
                     scaler.step(self.optimizer)
                     scaler.update()
-                    self.optimizer.zero_grad()
+                    # loss.backward()
+                    # self.optimizer.step()
+
+                    self.scheduler.step()
 
                     running_loss += loss.item()
 

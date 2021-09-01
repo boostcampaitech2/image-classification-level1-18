@@ -2,16 +2,17 @@ from sys import path
 from tqdm import tqdm
 
 import torch
-
+import config
 
 class Predictor:
-    def __init__(self, model, epochs, device, batch_size, ensemble=False):
+    def __init__(self, model, epochs, device, batch_size, ensemble=False, tta=False):
         self.model = model
         self.epochs = epochs
         self.device = device
         self.batch_size = batch_size
         self.start_epoch = 1
         self.ensemble = ensemble
+        self.tta = tta
 
     def predict(self, dataloader, feature):
         result = []
@@ -22,14 +23,15 @@ class Predictor:
             len(dataloader)
             for ind, (images, paths) in enumerate(tepoch):
                 tepoch.set_description(f"{feature}")
-                if not self.ensemble:
-                    images = images.to(self.device)
+                images = images.to(self.device)
+
                 with torch.no_grad():
-                    if not self.ensemble:
-                        logits = self.model(images)
+                    logits = self.model(images)
+
+                    if not config.tta:
+                        _, preds = torch.max(logits, 1)
                     else:
-                        logits = self.model.predict(images)
-                    _, preds = torch.max(logits, 1)
+                        preds = torch.nn.functional.softmax(logits, dim=-1)
 
                     path_list = [path.split("/")[-1] for path in paths]
 

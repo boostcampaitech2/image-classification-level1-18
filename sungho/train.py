@@ -24,7 +24,7 @@ import torch.backends.cudnn as cudnn
 
 os.environ['WANDB_API_KEY'] = config.wandb_api_key
 
-def seed_everything(seed=42):
+def seed_everything(seed=4242):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     # torch.cuda.manual_seed_all(seed)  # if use multi-GPU
@@ -39,7 +39,7 @@ def train_worker(train_df, test_df):
     os.makedirs(model_dir)
 
     if config.merge_feature:
-        feature_train(train_df, test_df, 'Merged feature', config.model_name, model_dir)
+        feature_train(train_df, test_df, config.merge_feature_name, config.model_name, model_dir)
     else:
         for feature in config.features:
             feature_train(train_df, test_df, feature, config.model_name, model_dir)

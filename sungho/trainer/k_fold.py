@@ -62,14 +62,14 @@ class KFoldTrainer:
                 dataset=test_dataset,
                 batch_size=self.batch_size,
                 sampler=train_subsampler,
-                num_workers=4,
+                num_workers=0,
                 collate_fn=collator,
             )
             validate_dataloader = DataLoader(
                 dataset=test_dataset,
                 batch_size=self.batch_size,
                 sampler=validate_subsampler,
-                num_workers=4,
+                num_workers=0,
             )
 
             _, valid_acc = self.trainer.train(

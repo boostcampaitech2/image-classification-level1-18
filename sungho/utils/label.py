@@ -30,6 +30,7 @@ class Label:
         }
 
         self.label_number = list(product(Label.mask, Label.gender, Label.age))
+        print(self.label_number)
 
     def get_class_num(self, feature) -> list:
         if feature == 'Merged feature':
@@ -62,9 +63,9 @@ class Label:
 
     def age_feature(self, path) -> int:
         age = int(path.split(os.sep)[-2][-2:])
-        if age < 28:
+        if age < 29:
             return 0
-        elif 28 <= age < 59:
+        elif 29 <= age < 59:
             return 1
         elif age >= 59:
             return 2

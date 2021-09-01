@@ -53,7 +53,7 @@ class PretrainedModel:
     Downlaod model, append layer, and init weight and bias.
     """
 
-    def __init__(self, name, class_num, load_model=False) -> None:
+    def __init__(self, name, class_num, pretrained_path=None) -> None:
         self.name = name
         print("load model... class num is", class_num)
         if name == 'test':
@@ -137,9 +137,9 @@ class PretrainedModel:
             )
         # elif name == 'NFNet-F1':
             # model_F1 = pretrained_nfnet('pretrained/F1_haiku.npz')
-        if load_model:
-            self.model.load_state_dict(torch.load(config.pretrained_path))
-            print('load custom pretrained model!!', config.pretrained_path)
+        if pretrained_path:
+            self.model.load_state_dict(torch.load(pretrained_path))
+            print('load custom pretrained model!!', pretrained_path)
 
     def reset_parameters(self, layer):
         bound = 1 / math.sqrt(layer.weight.size(1))
