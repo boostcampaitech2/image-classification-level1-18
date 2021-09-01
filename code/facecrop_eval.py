@@ -52,7 +52,7 @@ for paths in os.listdir(img_path):
     cnt += 1
     
     img = cv2.resize(img,(224, 244))
-    
+    img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
     cv2.imwrite(tmp, img)
         
 print(cnt)

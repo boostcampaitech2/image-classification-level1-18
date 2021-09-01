@@ -14,7 +14,8 @@ test_dir = '/opt/ml/input/data/eval'
 #SAVE_PATH='/opt/ml/model/emodelf_b4crop.pt'
 #SAVE_PATHA='/opt/ml/model/emodela_b4e20.pt'
 #SAVE_PATH='/opt/ml/model/emodelf_b4crop.pt'
-SAVE_PATH='/opt/ml/model/emodela_b4crop.pt'
+SAVE_PATHF='/opt/ml/model/emodelf_b4_final.pt'
+SAVE_PATHA='/opt/ml/model/emodela_b4_final.pt'
 
 class TestDataset(Dataset):
     def __init__(self, img_paths, transform):
@@ -53,7 +54,7 @@ loader = DataLoader(
 device = torch.device('cuda')
 
 new_model = my_emodel.start(18)
-new_model.load_state_dict(torch.load(SAVE_PATH))
+new_model.load_state_dict(torch.load(SAVE_PATHF))
 model = new_model.to(device)
 model.eval()
 
@@ -68,5 +69,5 @@ for images in loader:
 submission['ans'] = all_predictions
 
     # 제출할 파일을 저장합니다.
-submission.to_csv(os.path.join(test_dir, 'submissione_f_b7_cropa.csv'), index=False)
+submission.to_csv(os.path.join(test_dir, 'submission_fcb_b4.csv'), index=False)
 print('test inference is done!')

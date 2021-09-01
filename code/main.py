@@ -19,12 +19,12 @@ if __name__ == '__main__':
     print('start making image path')
     image_names = []
     image_names = make_image_name.start(IMAGE_PATH)
-    labels = make_label.start(image_names)
-    make_new_train_data.start(image_names,labels)
+    ids,labels = make_label.start(image_names)
+    make_new_train_data.start(image_names,ids,labels)
     print('finish making labeled data')
     print('load dataset')
     train_dataset, val_dataset = dataset.start()
-    print('load finished')
+    #print('load finished')
     #train.start(train_dataset,val_dataset)
     traine.start(train_dataset,val_dataset)
     

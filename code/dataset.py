@@ -8,6 +8,7 @@ from time import time
 import torch.utils.data as data
 
 
+
 import get_transforms
 
 
@@ -22,7 +23,7 @@ std = (0.233,0.243,0.246)
 class MaskBaseDataset(data.Dataset):
     num_classes = 3 * 2 * 3
 
-    def __init__(self, image_dir, transform=None):
+    def __init__(self, image_dir, maskdataset, transform=None):
         """
         MaskBaseDataset을 initialize 합니다.
 
@@ -32,9 +33,11 @@ class MaskBaseDataset(data.Dataset):
             transform: Augmentation을 하는 함수입니다.
         """
         self.image_dir = image_dir
-        self.data = pd.read_csv(LABELED_DATA_PATH)
+        #self.data = pd.read_csv(LABELED_DATA_PATH)
+        self.data = maskdataset
         self.image_name = self.data['imageName']
         self.label = self.data['label']
+        self.id = self.data['id']
         self.mean = mean
         self.std = std
         self.transform = transform
@@ -70,15 +73,20 @@ class MaskBaseDataset(data.Dataset):
 
 def start():
     transform = get_transforms.start(mean=mean, std=std)
-    dataset = MaskBaseDataset(image_dir=IMAGE_PATH)
-
+    #dataset = MaskBaseDataset(image_dir=IMAGE_PATH)
+    df = pd.read_csv(LABELED_DATA_PATH)
+    train_df, val_df = train_test_split(df,test_size=0.2,random_state=42,stratify=df.label)
+    train_df = train_df.reset_index()
+    val_df = val_df.reset_index()
+    train_dataset = MaskBaseDataset(image_dir=IMAGE_PATH,maskdataset=train_df)
+    val_dataset = MaskBaseDataset(image_dir=IMAGE_PATH,maskdataset=val_df)
     # train dataset과 validation dataset을 8:2 비율로 나눕니다.
-    n_val = int(len(dataset) * 0.2)
-    n_train = len(dataset) - n_val
-    train_dataset, val_dataset = data.random_split(dataset, [n_train, n_val])
+    #n_val = int(len(dataset) * 0.2)
+    #n_train = len(dataset) - n_val
+    #train_dataset, val_dataset = data.random_split(dataset, [n_train, n_val])
 
     # 각 dataset에 augmentation 함수를 설정합니다.
-    train_dataset.dataset.set_transform(transform['train'])
-    val_dataset.dataset.set_transform(transform['val'])
+    train_dataset.set_transform(transform['train'])
+    val_dataset.set_transform(transform['val'])
 
     return train_dataset, val_dataset

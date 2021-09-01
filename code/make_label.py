@@ -9,10 +9,12 @@ def start(images_name):
         [list]: class
     """
     labels = []
+    ids = []
     for path in images_name:
         _dir, img = path.split('/')
-        _, sex, _, age = _dir.split('_')
+        id, sex, _, age = _dir.split('_')
         age = int(age)
+        ids.append(id)
         if img.startswith('mask'):
             if sex == 'male':
                 if age < 29:
@@ -59,4 +61,4 @@ def start(images_name):
                 else:
                     labels.append(16)
 
-    return labels
+    return ids,labels

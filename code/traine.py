@@ -10,12 +10,12 @@ import focalloss
 from pytorch_metric_learning import losses
 import random
 import wandb
-from loss_functions import AngularPenaltySMLoss
+import randbox
 
 import my_emodel
 #/opt/ml/input/data/train/new_imgs
-SAVE_PATHF='/opt/ml/model/emodelf_b4crop.pt'
-SAVE_PATHA='/opt/ml/model/emodela_b4crop.pt'
+SAVE_PATHF='/opt/ml/model/emodelf_b4_final.pt'
+SAVE_PATHA='/opt/ml/model/emodela_b4_final.pt'
 
 def set_seed(seed):
     random.seed(seed)
@@ -49,12 +49,14 @@ def start(train_dataset, val_dataset):
     my_mmodel.to(device) # Resnent 18 네트워크의 Tensor들을 GPU에 올릴지 Memory에 올릴지 결정함
 
     LEARNING_RATE = 0.0001 # 학습 때 사용하는 optimizer의 학습률 옵션 설정
-    NUM_EPOCH = 5 # 학습 때 mnist train 데이터 셋을 얼마나 많이 학습할지 결정하는 옵션
+    NUM_EPOCH = 60 # 학습 때 mnist train 데이터 셋을 얼마나 많이 학습할지 결정하는 옵션
 
     #loss_fn = torch.nn.CrossEntropyLoss() # 분류 학습 때 많이 사용되는 Cross entropy loss를 objective function으로 사용 - https://en.wikipedia.org/wiki/Cross_entropy
     #loss_fn = losses.ArcFaceLoss(512,18,loss_type='arcface')
-    #loss_fn = focalloss.FocalLoss(gamma=2)
-    loss_fn = AngularPenaltySMLoss(512,CLASS_NUM,loss_type='arcface')
+    loss_fn = focalloss.FocalLoss(gamma=2)
+    #in_features = 512
+    #out_features = CLASS_NUM
+    #loss_fn = AngularPenaltySMLoss(in_features,out_features,loss_type='arcface')
     optimizer = torch.optim.Adam(my_mmodel.parameters(), lr=LEARNING_RATE) # weight 업데이트를 위한 optimizer를 Adam으로 사용함
 
     dataloaders = {
@@ -66,12 +68,8 @@ def start(train_dataset, val_dataset):
     best_test_accuracy = 0.
     best_test_loss = 9999.
     best_test_f1 = 0.
-
-    ### 학습 코드 시작
-    best_test_accuracy = 0.
-    best_test_loss = 9999.
-    best_test_f1 = 0.
-
+    early_stop_patience = 7
+    early_stop_cnt = 0
     #earlystopping = EarlyStopping(patience = 7,verbose = True)
     wandb.watch(my_mmodel)
     for epoch in range(NUM_EPOCH):
@@ -89,10 +87,23 @@ def start(train_dataset, val_dataset):
             labels = labels.to(device)
 
             optimizer.zero_grad() # parameter gradient를 업데이트 전 초기화함
-            logits = my_mmodel(images)
-            _, preds = torch.max(logits, 1) # 모델에서 linear 값으로 나오는 예측 값 ([0.9,1.2, 3.2,0.1,-0.1,...])을 최대 output index를 찾아 예측 레이블([2])로 변경함
-                    
-            loss = loss_fn(logits, labels)
+            
+            if np.random.random()>0.5: #cutmix를 하는 경우
+                lam = np.random.beta(1, 1)
+                rand_index = torch.randperm(images.size()[0]).to(device)
+                target_a = labels # 원본 이미지 label
+                target_b = labels[rand_index] # 패치 이미지 label       
+                bbx1, bby1, bbx2, bby2 = randbox.rand_bbox(images.size(), lam)
+                images[:, :, bbx1:bbx2, bby1:bby2] = images[rand_index, :, bbx1:bbx2, bby1:bby2]
+                lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (images.size()[-1] * images.size()[-2]))
+                logits = my_mmodel(images)
+                loss = loss_fn(logits, target_a) * lam + loss_fn(logits, target_b) * (1. - lam) # 패치 이미지와 원본 이미지의 비율에 맞게 
+            
+            else: #cutmix 안하는 경우
+                logits = my_mmodel(images)
+                loss = loss_fn(logits, labels)
+
+            _, preds = torch.max(logits, 1) # 모델에서 linear 값으로 나오는 예측 값 ([0.9,1.2, 3.2,0.1,-0.1,...])을 최대 output index를 찾아 예측 레이블([2])로 변경함        
                 
             loss.backward() # 모델의 예측 값과 실제 값의 CrossEntropy 차이를 통해 gradient 계산
             optimizer.step() # 계산된 gradient를 가지고 모델 업데이트
@@ -125,7 +136,7 @@ def start(train_dataset, val_dataset):
 
                 logits = my_mmodel(images)
                 _, preds = torch.max(logits, 1) # 모델에서 linear 값으로 나오는 예측 값 ([0.9,1.2, 3.2,0.1,-0.1,...])을 최대 output index를 찾아 예측 레이블([2])로 변경함
-                        
+    
                 loss = loss_fn(logits, labels)
                     
                 running_test_loss += loss.item() * images.size(0) # 한 Batch에서의 loss 값 저장
@@ -146,8 +157,14 @@ def start(train_dataset, val_dataset):
             best_test_loss = epoch_test_loss
         if best_test_f1 < epoch_test_f1: # phase가 test일 때, best f1 계산
             best_test_f1 = epoch_test_f1
-            torch.save(my_mmodel.state_dict(),SAVE_PATHF)    
+            torch.save(my_mmodel.state_dict(),SAVE_PATHF)
+            early_stop_cnt = 0
+        else:    
+            early_stop_cnt += 1
 
+        if early_stop_cnt == early_stop_patience:
+            print('Early stopping')
+            break
         #earlystopping(epoch_test_loss,my_mmodel)
         #if earlystopping.early_stop:
         #    print("Early stopping")
