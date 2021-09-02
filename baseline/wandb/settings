@@ -1,0 +1,6 @@
+[default]
+entity = sala0320
+project = mask_contest
+base_url = https://api.wandb.ai
+mode = online
+
