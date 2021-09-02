@@ -49,6 +49,8 @@ class CustomModel(nn.Module):
         self.net = EfficientNet.from_pretrained('efficientnet-b7',num_classes=18)
 
 
+
+
     def forward(self, x):
         """
         1. 위에서 정의한 모델 아키텍쳐를 forward propagation 을 진행해주세요
