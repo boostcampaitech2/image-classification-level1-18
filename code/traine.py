@@ -14,8 +14,8 @@ import randbox
 
 import my_emodel
 #/opt/ml/input/data/train/new_imgs
-SAVE_PATHF='/opt/ml/model/emodelf_b4_1249.pt'
-SAVE_PATHA='/opt/ml/model/emodela_b4_1249.pt'
+SAVE_PATHF='/opt/ml/model/emodelf_b4_1249_t1.pt'
+SAVE_PATHA='/opt/ml/model/emodela_b4_1249_t1.pt'
 
 def set_seed(seed):
     random.seed(seed)

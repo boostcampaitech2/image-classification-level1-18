@@ -75,7 +75,7 @@ def start():
     transform = get_transforms.start(mean=mean, std=std)
     #dataset = MaskBaseDataset(image_dir=IMAGE_PATH)
     df = pd.read_csv(LABELED_DATA_PATH)
-    train_df, val_df = train_test_split(df,test_size=0.2,random_state=42,stratify=df.label)
+    train_df, val_df = train_test_split(df,test_size=0.1,random_state=42,stratify=df.label)
     train_df = train_df.reset_index()
     val_df = val_df.reset_index()
     train_dataset = MaskBaseDataset(image_dir=IMAGE_PATH,maskdataset=train_df)

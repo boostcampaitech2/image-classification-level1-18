@@ -14,8 +14,8 @@ test_dir = '/opt/ml/input/data/eval'
 #SAVE_PATH='/opt/ml/model/emodelf_b4crop.pt'
 #SAVE_PATHA='/opt/ml/model/emodela_b4e20.pt'
 #SAVE_PATH='/opt/ml/model/emodelf_b4crop.pt'
-SAVE_PATHF='/opt/ml/model/emodelf_b4_1249.pt'
-SAVE_PATHA='/opt/ml/model/emodela_b4_1249.pt'
+SAVE_PATHF='/opt/ml/model/emodelf_b4_1249_t1.pt'
+SAVE_PATHA='/opt/ml/model/emodela_b4_537.pt'
 
 class TestDataset(Dataset):
     def __init__(self, img_paths, transform):
@@ -43,6 +43,7 @@ transform = transforms.Compose([
     ToTensor(),
     Normalize(mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246)),
 ])
+"""
 tta1 = transforms.Compose([
     Resize((224, 244), Image.BILINEAR),
     RandomAffine(30),
@@ -55,13 +56,14 @@ tta2 = transforms.Compose([
     ToTensor(),
     Normalize(mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246)),
 ])
+"""
 dataset = TestDataset(image_paths, transform)
 
 loader = DataLoader(
     dataset,
     shuffle=False
 )
-
+"""
 tta1_data = TestDataset(image_paths, tta1)
 
 tta1_loader = DataLoader(
@@ -75,7 +77,7 @@ tta2_loader = DataLoader(
     tta2_data,
     shuffle=False
 )
-
+"""
     # 모델을 정의합니다. (학습한 모델이 있다면 torch.load로 모델을 불러주세요!)
 device = torch.device('cuda')
 
@@ -86,19 +88,21 @@ model.eval()
 
     # 모델이 테스트 데이터셋을 예측하고 결과를 저장합니다.
 all_predictions = []
-for i1,i2,i3 in zip(loader,tta1_loader,tta2_loader):
+#for i1,i2,i3 in zip(loader,tta1_loader,tta2_loader):
+for i1 in loader:
     with torch.no_grad():
         i1 = i1.to(device)
-        i2 = i2.to(device)
-        i3 = i3.to(device)
-        pred1 = model(i1) / 3
-        pred2 = model(i2) / 3
-        pred3 = model(i3) / 3
-        pred = pred1+pred2+pred3
+        #i2 = i2.to(device)
+        #i3 = i3.to(device)
+        #pred1 = model(i1) / 3
+        #pred2 = model(i2) / 3
+        #pred3 = model(i3) / 3
+        pred = model(i1)
+        #pred = pred1+pred2+pred3
         pred = pred.argmax(dim=-1)
         all_predictions.extend(pred.cpu().numpy())
 submission['ans'] = all_predictions
 
     # 제출할 파일을 저장합니다.
-submission.to_csv(os.path.join(test_dir, 'submission_f_b4_1249_ttatest.csv'), index=False)
+submission.to_csv(os.path.join(test_dir, 'submission_f_b4_1249_91.csv'), index=False)
 print('test inference is done!')
