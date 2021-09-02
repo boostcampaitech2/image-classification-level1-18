@@ -11,7 +11,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from torch.optim.lr_scheduler import StepLR, CosineAnnealingWarmRestarts
+from torch.optim.lr_scheduler import StepLR, CosineAnnealingWarmRestarts, ExponentialLR
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
@@ -21,7 +21,13 @@ from loss import create_criterion
 import wandb
 from custom_lib import useful_func, focal_loss, cut_mix
 from sklearn.metrics import f1_score
-# from sklearn.model_section import train_set_split
+from sklearn.model_selection import StratifiedKFold
+
+from ray import tune
+from ray.tune import CLIReporter
+from ray.tune.schedulers import ASHAScheduler
+from ray.tune.suggest.bayesopt import BayesOptSearch
+from ray.tune.suggest.hyperopt import HyperOptSearch
 
 
 def seed_everything(seed):
@@ -150,7 +156,8 @@ def train(data_dir, model_dir, args):
         lr=args.lr,
         weight_decay=5e-4
     )
-    scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=30, T_mult=1, eta_min=0.00001)
+    # scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=50, T_mult=1, eta_min=0.00001)
+    scheduler = ExponentialLR(optimizer, gamma=0.95)
 
     # -- logging
     logger = SummaryWriter(log_dir=save_dir)
@@ -160,6 +167,8 @@ def train(data_dir, model_dir, args):
     # -- wandb
     config={"epochs": args.epochs, "batch_size": args.batch_size, "learning_rate" : args.lr, "exp": save_dir}
     wandb_tag = [args.criterion, args.model, args.optimizer]
+    if is_cutmix:
+        wandb_tag.append('CutMix')
     wandb.init(project="p_stage_img_cl", config=config, tags=wandb_tag)
     
     best_f1 = 0
@@ -201,7 +210,7 @@ def train(data_dir, model_dir, args):
 
             loss_value += loss.item()
             matches += (preds == labels).sum().item()
-            if (idx + 1) % args.log_interval == 0:
+            if (idx + 1) % args.log_interval == 0: # gradient accumulation
                 train_loss = loss_value / args.log_interval
                 train_acc = matches / args.batch_size / args.log_interval
                 current_lr = get_lr(optimizer)
@@ -302,14 +311,14 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default='MyModel', help='model type (default: MyModel)')
     parser.add_argument('--optimizer', type=str, default='Adam', help='optimizer type (default: Adam)')
     parser.add_argument('--lr', type=float, default=1e-3, help='learning rate (default: 1e-3)')
-    parser.add_argument('--val_ratio', type=float, default=0.1, help='ratio for validaton (default: 0.2)')
+    parser.add_argument('--val_ratio', type=float, default=0.2, help='ratio for validaton (default: 0.2)')
     parser.add_argument('--criterion', type=str, default='focal', help='criterion type (default: cross_entropy)')
     parser.add_argument('--lr_decay_step', type=int, default=20, help='learning rate scheduler deacy step (default: 20)')
     parser.add_argument('--log_interval', type=int, default=20, help='how many batches to wait before logging training status')
     parser.add_argument('--name', default='exp', help='model save at {SM_MODEL_DIR}/{name}')
     parser.add_argument('--cutmix', default=True, help='acitvate cutmix (default: True)')
     parser.add_argument('--cutmix_beta', default=1.0, help='parameter for cutmix (default: 1.0)')
-    parser.add_argument('--early_stop', default=10)
+    parser.add_argument('--early_stop', default=50)
 
     # Container environment
     parser.add_argument('--data_dir', type=str, default=os.environ.get('SM_CHANNEL_TRAIN', '/opt/ml/input/data/train/images'))

@@ -1,0 +1,19 @@
+cutmix StratSplit epoch10: best 0.76 / 자체 0.62 / 제출 0.72
+cutmix StratSplit epoch30: best 0.79 / 자체 0.61 /
+
+cutmix epoch 30:           best 0.92 / 자체 0.69 / 제출 0.71
+
+epoch 30:                  best 0.94 / 자체 0.65
+
+StratSplit epoch 30 :      best 0.75 / 자체 0.60
+
+lr_scheduler epoch 30:     best 0.76 / 자체 0.64
+
+cutmix epoch30:            best 0.73 / 자체 0.61
+
+cutmix epoch300:           best 0.84 / 자체 0.61
+
+cutmix StratSplit epoch30: best 0.77 / 자체 0.65
+
+cutmix epoch300:           best 0.91 / 자체 0.64
+

@@ -152,7 +152,7 @@ class MaskBaseDataset(Dataset):
     indices = []
     groups = []
 
-    def __init__(self, data_dir, mean=(0.560, 0.524, 0.501), std=(0.233, 0.242, 0.245), val_ratio=0.2):
+    def __init__(self, data_dir, mean=(0.548, 0.504, 0.479), std=(0.237, 0.247, 0.246), val_ratio=0.2):
         self.data_dir = data_dir
         self.mean = mean
         self.std = std
@@ -263,19 +263,19 @@ class MaskBaseDataset(Dataset):
         torch.utils.data.Subset 클래스 둘로 나눕니다.
         구현이 어렵지 않으니 구글링 혹은 IDE (e.g. pycharm) 의 navigation 기능을 통해 코드를 한 번 읽어보는 것을 추천드립니다^^
         """
-        # n_val = int(len(self) * self.val_ratio)
-        # n_train = len(self) - n_val
-        # train_set, val_set = random_split(self, [n_train, n_val])
-        # return train_set, val_set
+        n_val = int(len(self) * self.val_ratio)
+        n_train = len(self) - n_val
+        train_set, val_set = random_split(self, [n_train, n_val])
+        return train_set, val_set
 
         # 클래스 라벨별로 나누는 코드
-        df = pd.DataFrame({"indices":self.indices, "groups":self.groups, "labels":self.all_labels})
-
-        train, valid = connex_split.train_test_apart_stratify(df, group="groups", stratify="labels", test_size=self.val_ratio)
-        train_index = train["indices"].tolist()
-        valid_index = valid["indices"].tolist()
-
-        return  [Subset(self, train_index), Subset(self, valid_index)]
+        # df = pd.DataFrame({"indices":self.indices, "groups":self.groups, "labels":self.all_labels})
+        #
+        # train, valid = connex_split.train_test_apart_stratify(df, group="groups", stratify="labels", test_size=self.val_ratio)
+        # train_index = train["indices"].tolist()
+        # valid_index = valid["indices"].tolist()
+        #
+        # return  [Subset(self, train_index), Subset(self, valid_index)]
 
 
 class MaskSplitByProfileDataset(MaskBaseDataset):
