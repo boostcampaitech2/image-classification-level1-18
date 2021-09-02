@@ -89,7 +89,7 @@ class AgeLabels(int, Enum):
             return cls.OLD
 
 
-class MaskBaseDataset(Dataset):
+class ImageBaseDataset(Dataset):
     num_classes = 3 * 2 * 3
 
     _file_names = {
@@ -233,13 +233,20 @@ class MaskBaseDataset(Dataset):
         train, valid = connex_split.train_test_apart_stratify(df, group="groups", stratify="labels", test_size=self.val_ratio)
         train_index = train["indices"].tolist()
         valid_index = valid["indices"].tolist()
+        return Subset(self, train_index), Subset(self, valid_index)
+        # return train_index, valid_index
 
-        print(train_index)
 
-        a = Subset(self, train_index)
-        # return  [Subset(self, train_index), Subset(self, valid_index)]
-        return  [Subset(self, train_index), Subset(self, valid_index)]
+class Subset(Dataset):
+    def __init__(self, dataset, indices):
+        self.dataset = dataset
+        self.indices = indices
 
+    def __getitem__(self, idx):
+        return self.dataset[self.indices[idx]]
+
+    def __len__(self):
+        return len(self.indices)
 
 #
 # class MaskSplitByProfileDataset(MaskBaseDataset):

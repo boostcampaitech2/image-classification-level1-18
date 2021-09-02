@@ -13,7 +13,7 @@ from torchvision.datasets import MNIST
 
 from model import CustomModel
 from transform import make_transform
-from dataset import MaskBaseDataset
+from dataset import ImageBaseDataset
 from utils import seed_fix
 
 # Set random seed
@@ -55,11 +55,14 @@ args = parser.parse_args()
 if __name__ == '__main__':
     seed_fix(args.seed)
     train_transform, test_transform = make_transform(args)
-    dataset = MaskBaseDataset(data_dir='train/train/images', transform=test_transform)
-    train_dataset, eval_dataset = dataset.split_dataset()
+    dataset = ImageBaseDataset(data_dir='train/train/images', transform=test_transform)
+    train_dataset, valid_dataset = dataset.split_dataset()
+
+    # train_subsampler = torch.utils.data.DistributedSampler(train_idx)
+    # validate_subsampler = torch.utils.data.DistributedSampler(valid_idx)
 
     train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True, num_workers=4)
-    val_loader = DataLoader(eval_dataset, batch_size=128, num_workers=4)
+    val_loader = DataLoader(valid_dataset, batch_size=128, num_workers=4)
 
     # dataset = MNIST('', train=True, download=True, transform=transforms.ToTensor())
     # mnist_train, mnist_val = random_split(dataset, [55000, 5000])
@@ -68,8 +71,8 @@ if __name__ == '__main__':
     model = CustomModel(model_name=args.model, num_classes=18)
 
     # training
-    trainer = pl.Trainer(max_epochs=args.epochs, gpus=2, num_sanity_val_steps=0)
-    trainer.fit(model, train_loader, val_loader)
+    trainer = pl.Trainer(max_epochs=args.epochs, gpus=2, accelerator="dp")
+    trainer.fit(model, train_dataloader=train_loader, val_dataloaders=val_loader)
 
 
 

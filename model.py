@@ -30,12 +30,12 @@ class CustomModel(pl.LightningModule):
     def validation_step(self, val_batch, batch_idx):
         x, y = val_batch
         y_hat = self(x)
-        loss = FocalLoss(y_hat, y)
+        loss = FocalLoss()(y_hat, y)
 
     def test_step(self, test_batch, batch_idx):
         x, y = test_batch
         y_hat = self(x)
-        loss = FocalLoss(y_hat, y)
+        loss = FocalLoss()(y_hat, y)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
