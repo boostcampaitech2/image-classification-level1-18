@@ -46,7 +46,7 @@ class CustomModel(nn.Module):
         3. 모델의 output_dimension 은 num_classes 로 설정해주세요.
         """
 
-        self.net = EfficientNet.from_pretrained('efficientnet-b2',num_classes=18)
+        self.net = EfficientNet.from_pretrained('efficientnet-b7',num_classes=18)
 
 
     def forward(self, x):
