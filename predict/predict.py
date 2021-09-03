@@ -37,6 +37,8 @@ class Predictor:
 
                     result.append([path_list, preds.tolist()])
 
+        # predicted result can't hold path.
+        # so, append path!
         merge_result = []
         for epoch_pred in result:
             for path, pred_class in zip(epoch_pred[0], epoch_pred[1]):

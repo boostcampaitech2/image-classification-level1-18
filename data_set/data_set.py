@@ -48,6 +48,7 @@ class MaskDataset(Dataset):
 
         # img = np.array(Image.open(target_path).convert("RGB"))
         if not os.path.isfile(target_path):
+            # Path can't be found. Exit prgram.
             print(target_path)
             exit()
         img = cv2.imread(target_path)

@@ -36,8 +36,10 @@ def train_worker(train_df, test_df):
     model_dir = os.path.join(config.model_dir, date)
     os.makedirs(model_dir)
 
+    # train one model for 18 classes
     if config.merge_feature:
         feature_train(train_df, test_df, config.merge_feature_name, config.model_name, model_dir)
+    # train 3 features with 3 models.
     else:
         for feature in config.features:
             feature_train(train_df, test_df, feature, config.model_name, model_dir)
@@ -109,8 +111,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # Generate csv file for training
     if args.generate_path:
         generate_csv(config.train_csv, config.train_dir, config.with_system_path_csv)
-    if args.split_train:
+    elif args.split_train:
         main()
         print('End Train!')

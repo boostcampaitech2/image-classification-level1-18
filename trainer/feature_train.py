@@ -9,6 +9,10 @@ from utils import transformation
 
 
 def feature_train(train_df, test_df, feature, model_name, model_dir):
+    """
+    Configurate settings and generate trainer.
+    Train for 'feature' parameters.
+    """
     print(f"{feature}, {model_name}")
 
     train_dataset = MaskDataset(

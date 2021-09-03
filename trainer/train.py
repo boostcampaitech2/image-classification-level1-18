@@ -72,7 +72,7 @@ class BaseTrainer:
                         targets = (targets1.to(self.device), targets2.to(self.device), lam)
                         target_list[0] += targets[0].tolist()
                         target_list[1] += targets[1].tolist()
-                    # Normal
+                    # Normal train
                     else:
                         targets = targets.to(self.device)
                         target_list += targets.tolist()
