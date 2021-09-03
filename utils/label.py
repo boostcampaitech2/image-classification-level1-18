@@ -30,7 +30,7 @@ class Label:
         }
 
         self.label_number = list(product(Label.mask, Label.gender, Label.age))
-        print(self.label_number)
+        # print(self.label_number)
 
     def get_class_num(self, feature) -> list:
         if feature == 'Merged feature':
