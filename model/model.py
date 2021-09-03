@@ -11,9 +11,10 @@ from efficientnet_pytorch import EfficientNet
 
 from vit_pytorch.cait import CaiT
 import timm
-from model import volo
+from model.model import volo
 from tlt.utils import load_pretrained_weights
-import config
+
+
 # from nfnets import pretrained_nfnet
 
 class BaseModel(nn.Module):
